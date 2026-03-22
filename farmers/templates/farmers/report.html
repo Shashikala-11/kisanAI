@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% load farm_tags %}
+{% block title %}Farm Health Report — {{ farmer.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .report-header { background: linear-gradient(135deg,#1a4731,#2d6a4f); color:#fff; padding:2.5rem 0; }
+  .report-card { border:none; border-radius:16px; box-shadow:0 2px 16px rgba(0,0,0,.07); margin-bottom:1.5rem; }
+  .risk-bar { height:10px; border-radius:5px; background:#e9ecef; overflow:hidden; }
+  .risk-fill { height:100%; border-radius:5px; }
+  .section-label { font-size:.75rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#40916c; }
+  .det-card { border-radius:12px; border:1px solid #e9ecef; padding:1rem; margin-bottom:.75rem; }
+  .det-card.critical { border-left:4px solid #dc3545; }
+  .det-card.high     { border-left:4px solid #fd7e14; }
+  .det-card.medium   { border-left:4px solid #ffc107; }
+  .det-card.low      { border-left:4px solid #198754; }
+  .risk-analysis-box { background:#f8f9fa; border-radius:10px; padding:1rem; font-size:.875rem; }
+  .spread-item { background:#fff3e0; border-radius:8px; padding:.5rem .75rem; margin-bottom:.4rem; font-size:.85rem; }
+  .action-item { background:#e8f5e9; border-radius:8px; padding:.5rem .75rem; margin-bottom:.4rem; font-size:.85rem; }
+  @media print {
+    .navbar, .no-print { display:none !important; }
+    .report-card { box-shadow:none; border:1px solid #dee2e6 !important; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="report-header">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+      <div>
+        <p class="section-label mb-1" style="color:#a8d5b5;">Farm Health Report</p>
+        <h2 class="fw-bold mb-1">{{ farmer.name }}</h2>
+        <p class="mb-0 opacity-75 small">
+          {{ farmer.village }}, {{ farmer.district }} &nbsp;&middot;&nbsp;
+          Generated: {% now "d F Y" %}
+        </p>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button onclick="window.print()" class="btn btn-light btn-sm fw-semibold">
+          <i class="bi bi-printer me-1"></i>Print / Save PDF
+        </button>
+        <a href="{% url 'farmer-dashboard' %}" class="btn btn-outline-light btn-sm">
+          <i class="bi bi-arrow-left me-1"></i>Dashboard
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container py-4">
+
+  <!-- Summary cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="report-card card p-3 text-center">
+        <div class="fw-bold fs-3 text-success">{{ farm_reports|length }}</div>
+        <div class="text-muted small">Total Farms</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="report-card card p-3 text-center">
+        <div class="fw-bold fs-3" style="color:#1b3a2d;">{{ total_detections }}</div>
+        <div class="text-muted small">Disease Detections</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="report-card card p-3 text-center">
+        <div class="fw-bold fs-3 text-danger">{{ critical_count }}</div>
+        <div class="text-muted small">Critical Alerts</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="report-card card p-3 text-center">
+        <div class="fw-bold fs-3 text-warning">{{ high_count }}</div>
+        <div class="text-muted small">High Risk</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Per-farm reports -->
+  {% for fr in farm_reports %}
+  <div class="report-card card p-4">
+
+    <!-- Farm header -->
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+      <div>
+        <h5 class="fw-bold mb-1" style="color:#1b3a2d;">
+          <i class="bi bi-map me-2 text-success"></i>{{ fr.farm.name }}
+        </h5>
+        <div class="small text-muted">
+          {{ fr.farm.area_acres }} acres &middot; {{ fr.farm.location }} &middot;
+          Soil: {{ fr.farm.get_soil_type_display }}
+        </div>
+      </div>
+      <div>
+        {% if fr.high_risk.count > 0 %}
+          <span class="badge bg-danger">{{ fr.high_risk.count }} High Risk</span>
+        {% else %}
+          <span class="badge bg-success">No High Risk</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Crops -->
+    <div class="mb-3">
+      <p class="section-label mb-2">Crops on this farm</p>
+      <div class="d-flex flex-wrap gap-2">
+        {% for crop in fr.farm.crop_list %}
+          <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2">
+            <i class="bi bi-seedling me-1"></i>{{ crop }}
+          </span>
+        {% empty %}
+          <span class="text-muted small">No crops recorded</span>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Detection history -->
+    <p class="section-label mb-2">Detection History ({{ fr.total }} records)</p>
+
+    {% for det in fr.detections %}
+    <div class="det-card {{ det.risk_level }}">
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+        <div>
+          <span class="fw-semibold">{{ det.detected_label }}</span>
+          <span class="text-muted small ms-2">{{ det.detected_at|date:"d M Y, g:i A" }}</span>
+        </div>
+        <span class="badge bg-{{ det.risk_level|risk_color }}">
+          <i class="{{ det.risk_level|risk_icon }} me-1"></i>{{ det.risk_level|upper }}
+          &nbsp;{{ det.confidence_pct }}% confidence
+        </span>
+      </div>
+
+      <!-- Treatment advice -->
+      <div class="mb-2">
+        <p class="small fw-semibold mb-1" style="color:#1b3a2d;">
+          <i class="bi bi-capsule me-1"></i>Treatment Advice
+        </p>
+        <p class="small text-muted mb-0">{{ det.advice }}</p>
+      </div>
+
+      <!-- AI Risk Analysis -->
+      {% if det.risk_analysis %}
+      {% with det.risk_analysis as raw %}
+      <div class="risk-analysis-box mt-2">
+        <p class="small fw-semibold mb-2" style="color:#1b3a2d;">
+          <i class="bi bi-graph-up-arrow me-1 text-danger"></i>AI Farm Risk Analysis
+        </p>
+
+        {% comment %}
+        risk_analysis is stored as a Python dict string — we display key parts.
+        For a production app, store as JSON and parse in view.
+        {% endcomment %}
+
+        {% if "spread_causes" in raw %}
+        <p class="small fw-semibold mb-1 text-muted">Possible spread causes:</p>
+        {% for line in raw|slice:":500"|split:"'" %}
+          {% if "Wind" in line or "irrigation" in line or "tools" in line or "Insects" in line or "humidity" in line %}
+          <div class="spread-item"><i class="bi bi-arrow-right me-1 text-warning"></i>{{ line }}</div>
+          {% endif %}
+        {% endfor %}
+        {% endif %}
+
+        {% if "immediate_actions" in raw %}
+        <p class="small fw-semibold mb-1 mt-2 text-muted">Immediate actions required:</p>
+        {% for line in raw|slice:":800"|split:"'" %}
+          {% if "Isolate" in line or "Apply" in line or "Remove" in line or "Inform" in line or "Spray" in line %}
+          <div class="action-item"><i class="bi bi-check2 me-1 text-success"></i>{{ line }}</div>
+          {% endif %}
+        {% endfor %}
+        {% endif %}
+
+      </div>
+      {% endwith %}
+      {% endif %}
+
+    </div>
+    {% empty %}
+    <p class="text-muted small">No disease detections recorded for this farm.</p>
+    {% endfor %}
+
+  </div>
+  {% endfor %}
+
+  <!-- Chat history summary -->
+  {% if all_chats %}
+  <div class="report-card card p-4">
+    <h5 class="fw-bold mb-3" style="color:#1b3a2d;">
+      <i class="bi bi-chat-dots me-2 text-primary"></i>Advisory Queries
+    </h5>
+    {% for chat in all_chats %}
+    <div class="mb-3 pb-3 border-bottom">
+      <div class="d-flex justify-content-between">
+        <span class="small fw-semibold">{{ chat.query|truncatechars:100 }}</span>
+        <span class="text-muted small">{{ chat.created_at|date:"d M Y" }}</span>
+      </div>
+      <p class="small text-muted mt-1 mb-0">{{ chat.response|truncatechars:200 }}</p>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Footer note -->
+  <div class="text-center text-muted small py-3">
+    Report generated by Kisan AI AI &middot; SIH 2025 &middot; Punjab Dept. of Higher Education<br>
+    For expert advice, contact your local KVK or call Kisan Helpline: 1800-180-1551
+  </div>
+
+</div>
+{% endblock %}

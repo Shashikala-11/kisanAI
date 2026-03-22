@@ -1,0 +1,426 @@
+{% extends "base.html" %}
+{% block title %}Kisan AI — AI Assistant for Punjab Farmers{% endblock %}
+{% block nav_home %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* Hero */
+  .hero {
+    min-height: 92vh;
+    background: linear-gradient(135deg, #0d2b1a 0%, #1a4731 50%, #2d6a4f 100%);
+    display: flex; align-items: center;
+    position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: url("https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1600&q=80") center/cover no-repeat;
+    opacity: 0.18;
+  }
+  .hero-content { position: relative; z-index: 2; }
+  .hero h1 { font-size: clamp(2.4rem, 5vw, 4rem); font-weight: 800; line-height: 1.15; color: #fff; }
+  .hero p  { font-size: 1.15rem; color: #c8e6c9; max-width: 520px; }
+  .btn-hero-primary {
+    background: #52b788; border: none; color: #fff;
+    padding: .75rem 2rem; font-size: 1rem; font-weight: 600; border-radius: 8px;
+    transition: background .2s;
+  }
+  .btn-hero-primary:hover { background: #40916c; color: #fff; }
+  .btn-hero-outline {
+    border: 2px solid #a8d5b5; color: #a8d5b5;
+    padding: .75rem 2rem; font-size: 1rem; font-weight: 600; border-radius: 8px;
+    background: transparent; transition: all .2s;
+  }
+  .btn-hero-outline:hover { background: #a8d5b5; color: #1a4731; }
+
+  /* Stats bar */
+  .stats-bar { background: #1a4731; }
+  .stat-item { border-right: 1px solid rgba(255,255,255,.15); }
+  .stat-item:last-child { border-right: none; }
+  .stat-num { font-size: 2rem; font-weight: 800; color: #52b788; }
+  .stat-label { font-size: .8rem; color: #a8d5b5; text-transform: uppercase; letter-spacing: .05em; }
+
+  /* Section titles */
+  .section-label { font-size: .8rem; font-weight: 700; letter-spacing: .12em;
+    text-transform: uppercase; color: #40916c; }
+  .section-title { font-size: clamp(1.6rem, 3vw, 2.4rem); font-weight: 800; color: #1b3a2d; }
+
+  /* Feature cards */
+  .feature-card {
+    border: none; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,.07);
+    transition: transform .25s, box-shadow .25s;
+    height: 100%;
+  }
+  .feature-card:hover { transform: translateY(-6px); box-shadow: 0 12px 36px rgba(0,0,0,.13); }
+  .feature-card .card-img-top { height: 220px; object-fit: cover; }
+  .feature-icon {
+    width: 52px; height: 52px; border-radius: 12px;
+    background: #e8f5e9; display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; color: #2d6a4f; flex-shrink: 0;
+  }
+
+  /* How it works */
+  .how-section { background: #f0f7f2; }
+  .step-num {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: #2d6a4f; color: #fff;
+    font-size: 1.1rem; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .step-line {
+    width: 2px; background: #b7e4c7;
+    flex: 1; min-height: 40px; margin: 4px auto;
+  }
+
+  /* Big image section */
+  .showcase-img {
+    border-radius: 20px;
+    box-shadow: 0 16px 48px rgba(0,0,0,.18);
+    width: 100%; object-fit: cover;
+    height: 480px;
+  }
+
+  /* Benefit cards */
+  .benefit-card {
+    border: none; border-radius: 14px;
+    background: #fff; padding: 1.75rem;
+    box-shadow: 0 2px 16px rgba(0,0,0,.06);
+    height: 100%;
+  }
+  .benefit-icon { font-size: 2rem; color: #2d6a4f; }
+
+  /* CTA */
+  .cta-section {
+    background: linear-gradient(135deg, #1a4731, #2d6a4f);
+    color: #fff;
+  }
+
+  /* Footer */
+  footer { background: #0d2b1a; color: #a8d5b5; }
+  footer a { color: #a8d5b5; text-decoration: none; }
+  footer a:hover { color: #fff; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container hero-content py-5">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-6">
+        <p class="section-label mb-3" style="color:#52b788;">AI-Powered Agriculture</p>
+        <h1>Smart Farming Starts with the Right Advice</h1>
+        <p class="mt-3 mb-4">
+          Kisan AI gives Punjab farmers real-time crop guidance, live mandi prices,
+          weather alerts, and pest detection — in Punjabi, Hindi, or English.
+        </p>
+        <div class="d-flex flex-wrap gap-3">
+          <a href="{% url 'chat' %}" class="btn btn-hero-primary">
+            <i class="bi bi-chat-dots me-2"></i>Talk to Kisan AI
+          </a>
+          {% if request.session.farmer_id %}
+          <a href="{% url 'farmer-dashboard' %}" class="btn btn-hero-outline">
+            <i class="bi bi-person-circle me-2"></i>My Farm Dashboard
+          </a>
+          {% else %}
+          <a href="{% url 'farmer-register' %}" class="btn btn-hero-outline">
+            <i class="bi bi-box-arrow-in-right me-2"></i>Login / Register
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      <div class="col-lg-6 d-none d-lg-block text-center">
+        <img
+          src="https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=800&q=85"
+          alt="Farmer in wheat field"
+          class="img-fluid rounded-4"
+          style="max-height:480px; width:100%; object-fit:cover; box-shadow:0 20px 60px rgba(0,0,0,.4);"
+        />
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS BAR -->
+<section class="stats-bar py-4">
+  <div class="container">
+    <div class="row text-center text-white">
+      <div class="col-6 col-md-3 stat-item py-2">
+        <div class="stat-num">3.5M+</div>
+        <div class="stat-label">Farmers in Punjab</div>
+      </div>
+      <div class="col-6 col-md-3 stat-item py-2">
+        <div class="stat-num">4</div>
+        <div class="stat-label">Languages Supported</div>
+      </div>
+      <div class="col-6 col-md-3 stat-item py-2">
+        <div class="stat-num">Live</div>
+        <div class="stat-label">Mandi Price Data</div>
+      </div>
+      <div class="col-6 col-md-3 stat-item py-2">
+        <div class="stat-num">27</div>
+        <div class="stat-label">Crop Diseases Detected</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section class="py-6 py-5">
+  <div class="container">
+    <div class="text-center mb-5">
+      <p class="section-label">What We Offer</p>
+      <h2 class="section-title">Everything a Farmer Needs</h2>
+    </div>
+    <div class="row g-4">
+
+      <div class="col-md-6 col-lg-3">
+        <div class="feature-card card">
+          <img src="https://images.unsplash.com/photo-1560493676-04071c5f467b?w=600&q=80"
+               class="card-img-top" alt="Crop advice" />
+          <div class="card-body p-4">
+            <div class="d-flex align-items-center gap-3 mb-3">
+              <div class="feature-icon"><i class="bi bi-seedling"></i></div>
+              <h5 class="mb-0 fw-bold">Crop Advisory</h5>
+            </div>
+            <p class="text-muted small mb-0">
+              Personalized sowing schedules, variety selection, and fertilizer doses
+              based on your location and soil type.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-3">
+        <div class="feature-card card">
+          <img src="https://images.unsplash.com/photo-1611273426858-450d8e3c9fce?w=600&q=80"
+               class="card-img-top" alt="Market prices" />
+          <div class="card-body p-4">
+            <div class="d-flex align-items-center gap-3 mb-3">
+              <div class="feature-icon"><i class="bi bi-graph-up-arrow"></i></div>
+              <h5 class="mb-0 fw-bold">Live Mandi Prices</h5>
+            </div>
+            <p class="text-muted small mb-0">
+              Real-time prices from Punjab mandis via Agmarknet. Know the best time
+              and place to sell your produce.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-3">
+        <div class="feature-card card">
+          <img src="https://images.unsplash.com/photo-1504701954957-2010ec3bcec1?w=600&q=80"
+               class="card-img-top" alt="Pest detection" />
+          <div class="card-body p-4">
+            <div class="d-flex align-items-center gap-3 mb-3">
+              <div class="feature-icon"><i class="bi bi-bug"></i></div>
+              <h5 class="mb-0 fw-bold">Pest Detection</h5>
+            </div>
+            <p class="text-muted small mb-0">
+              Upload a photo of your crop leaf. Our AI identifies the disease and
+              recommends the right treatment instantly.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-3">
+        <div class="feature-card card">
+          <img src="https://images.unsplash.com/photo-1592210454359-9043f067919b?w=600&q=80"
+               class="card-img-top" alt="Weather" />
+          <div class="card-body p-4">
+            <div class="d-flex align-items-center gap-3 mb-3">
+              <div class="feature-icon"><i class="bi bi-cloud-sun"></i></div>
+              <h5 class="mb-0 fw-bold">Weather Alerts</h5>
+            </div>
+            <p class="text-muted small mb-0">
+              Live weather for your district with farming-specific advice on
+              irrigation, spraying, and harvesting windows.
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-section py-5">
+  <div class="container">
+    <div class="row align-items-center g-5">
+
+      <div class="col-lg-6 text-center">
+        <img
+          src="https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=900&q=85"
+          alt="Farmer using phone"
+          class="showcase-img"
+        />
+      </div>
+
+      <div class="col-lg-6">
+        <p class="section-label">How It Works</p>
+        <h2 class="section-title mb-4">From Question to Action in Seconds</h2>
+
+        <div class="d-flex gap-3 mb-4">
+          <div class="d-flex flex-column align-items-center">
+            <div class="step-num">1</div>
+            <div class="step-line"></div>
+          </div>
+          <div class="pt-2">
+            <h6 class="fw-bold">Ask in Your Language</h6>
+            <p class="text-muted small">Type or speak your question in Punjabi, Hindi, or English. No technical knowledge needed.</p>
+          </div>
+        </div>
+
+        <div class="d-flex gap-3 mb-4">
+          <div class="d-flex flex-column align-items-center">
+            <div class="step-num">2</div>
+            <div class="step-line"></div>
+          </div>
+          <div class="pt-2">
+            <h6 class="fw-bold">AI Fetches Real Data</h6>
+            <p class="text-muted small">Kisan AI pulls live weather, mandi prices, and searches its Punjab agriculture knowledge base.</p>
+          </div>
+        </div>
+
+        <div class="d-flex gap-3 mb-4">
+          <div class="d-flex flex-column align-items-center">
+            <div class="step-num">3</div>
+            <div class="step-line"></div>
+          </div>
+          <div class="pt-2">
+            <h6 class="fw-bold">Get Actionable Advice</h6>
+            <p class="text-muted small">Receive clear, practical guidance tailored to your crop, location, and current conditions.</p>
+          </div>
+        </div>
+
+        <div class="d-flex gap-3">
+          <div class="step-num">4</div>
+          <div class="pt-2">
+            <h6 class="fw-bold">Take Action, Earn More</h6>
+            <p class="text-muted small mb-0">Make informed decisions on sowing, selling, and protecting your crops to maximize income.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- BENEFITS -->
+<section class="py-5">
+  <div class="container">
+    <div class="text-center mb-5">
+      <p class="section-label">Farmer Benefits</p>
+      <h2 class="section-title">Built for Punjab's Small Farmers</h2>
+    </div>
+
+    <div class="row g-4 mb-5">
+      <div class="col-md-4">
+        <div class="benefit-card">
+          <i class="bi bi-translate benefit-icon mb-3 d-block"></i>
+          <h6 class="fw-bold">Multilingual Support</h6>
+          <p class="text-muted small mb-0">Communicate in Punjabi, Hindi, or English. The AI responds in the language you choose.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="benefit-card">
+          <i class="bi bi-wifi benefit-icon mb-3 d-block"></i>
+          <h6 class="fw-bold">Real-Time Information</h6>
+          <p class="text-muted small mb-0">No outdated advice. Every response is backed by live data from government APIs and weather services.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="benefit-card">
+          <i class="bi bi-shield-check benefit-icon mb-3 d-block"></i>
+          <h6 class="fw-bold">Government Scheme Guidance</h6>
+          <p class="text-muted small mb-0">Know which schemes you qualify for — PM-KISAN, PMFBY, KCC, and Punjab-specific subsidies.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="benefit-card">
+          <i class="bi bi-camera benefit-icon mb-3 d-block"></i>
+          <h6 class="fw-bold">Photo-Based Diagnosis</h6>
+          <p class="text-muted small mb-0">Just photograph the affected leaf. The AI identifies the disease and tells you exactly what to spray.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="benefit-card">
+          <i class="bi bi-currency-rupee benefit-icon mb-3 d-block"></i>
+          <h6 class="fw-bold">Better Selling Decisions</h6>
+          <p class="text-muted small mb-0">Compare prices across mandis and get advice on whether to sell now or wait for better rates.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="benefit-card">
+          <i class="bi bi-mic benefit-icon mb-3 d-block"></i>
+          <h6 class="fw-bold">Voice Input</h6>
+          <p class="text-muted small mb-0">Speak your question directly. No typing needed — ideal for farmers with low digital literacy.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Full-width showcase image -->
+    <div class="text-center">
+      <img
+        src="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1400&q=85"
+        alt="Punjab wheat fields"
+        class="img-fluid rounded-4"
+        style="width:100%; height:420px; object-fit:cover; box-shadow:0 12px 40px rgba(0,0,0,.15);"
+      />
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section py-5">
+  <div class="container text-center py-3">
+    <h2 class="fw-bold mb-3" style="font-size:2rem;">Ready to Farm Smarter?</h2>
+    <p class="mb-4" style="color:#c8e6c9; max-width:480px; margin:0 auto 1.5rem;">
+      Ask Kisan AI anything about your crops, prices, or pests — right now, for free.
+    </p>
+    <div class="d-flex justify-content-center gap-3 flex-wrap">
+      <a href="{% url 'chat' %}" class="btn btn-hero-primary btn-lg">
+        <i class="bi bi-chat-dots me-2"></i>Start Chatting
+      </a>
+      {% if request.session.farmer_id %}
+      <a href="{% url 'farmer-dashboard' %}" class="btn btn-hero-outline btn-lg">
+        <i class="bi bi-person-circle me-2"></i>My Farm Dashboard
+      </a>
+      {% else %}
+      <a href="{% url 'farmer-register' %}" class="btn btn-hero-outline btn-lg">
+        <i class="bi bi-box-arrow-in-right me-2"></i>Login / Register
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="py-4">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-6 mb-3 mb-md-0">
+        <div class="d-flex align-items-center gap-2 fw-bold fs-5 mb-1">
+          <i class="bi bi-truck"></i> Kisan AI
+        </div>
+        <small>AI-powered agriculture assistant for Punjab farmers.</small>
+      </div>
+      <div class="col-md-6 text-md-end">
+        <div class="d-flex gap-4 justify-content-md-end flex-wrap">
+          <a href="{% url 'chat' %}"><i class="bi bi-chat-dots me-1"></i>Chat</a>
+          <a href="{% url 'pest' %}"><i class="bi bi-bug me-1"></i>Pest Detect</a>
+          <a href="tel:18001801551"><i class="bi bi-telephone me-1"></i>Kisan Helpline</a>
+        </div>
+        <small class="d-block mt-2" style="color:#52b788;">SIH 2025 — Punjab Dept. of Higher Education</small>
+      </div>
+    </div>
+  </div>
+</footer>
+
+{% endblock %}

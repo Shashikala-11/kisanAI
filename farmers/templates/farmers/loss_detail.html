@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% load farm_tags %}
+{% block title %}Scheme Recommendations — {{ loss.crop }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .loss-header { background: linear-gradient(135deg,#7b1fa2,#4a148c); color:#fff; padding:2.5rem 0; }
+  .scheme-card { border:none; border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,.08); margin-bottom:1.5rem; overflow:hidden; }
+  .scheme-card .card-header { padding:1.25rem 1.5rem; border-bottom:1px solid rgba(0,0,0,.06); }
+  .scheme-card .card-body { padding:1.5rem; }
+  .urgency-immediate { border-left:5px solid #dc3545; }
+  .urgency-soon      { border-left:5px solid #fd7e14; }
+  .urgency-anytime   { border-left:5px solid #198754; }
+  .step-box { background:#f8f9fa; border-radius:10px; padding:1rem; }
+  .step-line { display:flex; gap:.75rem; margin-bottom:.5rem; align-items:flex-start; }
+  .step-num { width:24px; height:24px; border-radius:50%; background:#2d6a4f; color:#fff;
+    font-size:.75rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .info-pill { background:#e8f5e9; color:#1b3a2d; border-radius:20px;
+    padding:.3rem .9rem; font-size:.8rem; font-weight:600; display:inline-block; }
+  .urgency-badge-immediate { background:#fce4ec; color:#c62828; }
+  .urgency-badge-soon      { background:#fff3e0; color:#e65100; }
+  .urgency-badge-anytime   { background:#e8f5e9; color:#1b5e20; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="loss-header">
+  <div class="container">
+    <a href="{% url 'farmer-dashboard' %}" class="text-white opacity-75 small d-inline-flex align-items-center gap-1 mb-3 text-decoration-none">
+      <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+    <h2 class="fw-bold mb-1">Government Scheme Recommendations</h2>
+    <p class="mb-0 opacity-75">
+      Based on your reported {{ loss.crop }} loss due to {{ loss.get_cause_display }}
+    </p>
+  </div>
+</div>
+
+<div class="container py-4">
+
+  <!-- Loss summary -->
+  <div class="card border-0 shadow-sm p-4 mb-4" style="border-radius:16px; background:#fff8e1; border-left:5px solid #ffc107 !important;">
+    <h6 class="fw-bold mb-3" style="color:#1b3a2d;">
+      <i class="bi bi-clipboard-data me-2 text-warning"></i>Reported Loss Summary
+    </h6>
+    <div class="row g-3 small">
+      <div class="col-6 col-md-3">
+        <div class="text-muted">Crop</div>
+        <div class="fw-semibold">{{ loss.crop }}</div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="text-muted">Cause</div>
+        <div class="fw-semibold">{{ loss.get_cause_display }}</div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="text-muted">Severity</div>
+        <div class="fw-semibold">{{ loss.get_severity_display }}</div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="text-muted">Affected Area</div>
+        <div class="fw-semibold">{{ loss.affected_acres }} acres</div>
+      </div>
+      {% if loss.description %}
+      <div class="col-12">
+        <div class="text-muted">Additional Details</div>
+        <div class="fw-semibold">{{ loss.description }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Scheme recommendations -->
+  {% if schemes %}
+  <h5 class="fw-bold mb-3" style="color:#1b3a2d;">
+    <i class="bi bi-award me-2 text-success"></i>
+    {{ schemes|length }} Scheme{{ schemes|length|pluralize }} You Can Apply For
+  </h5>
+
+  {% for scheme in schemes %}
+  <div class="scheme-card card urgency-{{ scheme.urgency|default:'anytime' }}">
+    <div class="card-header d-flex justify-content-between align-items-start flex-wrap gap-2"
+         style="background:{% if scheme.urgency == 'immediate' %}#fff5f5{% elif scheme.urgency == 'soon' %}#fff8f0{% else %}#f0f7f2{% endif %}">
+      <div>
+        <h6 class="fw-bold mb-1" style="color:#1b3a2d;">{{ scheme.scheme_name }}</h6>
+        <p class="small text-muted mb-0">{{ scheme.relevance }}</p>
+      </div>
+      <span class="urgency-badge-{{ scheme.urgency|default:'anytime' }} px-3 py-1 rounded-pill small fw-bold">
+        {% if scheme.urgency == "immediate" %}
+          <i class="bi bi-exclamation-circle me-1"></i>Act Now
+        {% elif scheme.urgency == "soon" %}
+          <i class="bi bi-clock me-1"></i>Apply Soon
+        {% else %}
+          <i class="bi bi-check-circle me-1"></i>Anytime
+        {% endif %}
+      </span>
+    </div>
+
+    <div class="card-body">
+      <div class="row g-4">
+
+        <div class="col-md-6">
+          <div class="mb-3">
+            <p class="small fw-bold text-success mb-1"><i class="bi bi-currency-rupee me-1"></i>What You Get</p>
+            <p class="small mb-0">{{ scheme.benefit }}</p>
+          </div>
+          <div class="mb-3">
+            <p class="small fw-bold mb-1" style="color:#1b3a2d;"><i class="bi bi-person-check me-1"></i>Eligibility</p>
+            <p class="small mb-0 text-muted">{{ scheme.eligibility }}</p>
+          </div>
+          {% if scheme.deadline %}
+          <div class="info-pill {% if scheme.urgency == 'immediate' %}bg-danger bg-opacity-10 text-danger{% endif %}">
+            <i class="bi bi-calendar-event me-1"></i>{{ scheme.deadline }}
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="col-md-6">
+          <p class="small fw-bold mb-2" style="color:#1b3a2d;"><i class="bi bi-list-check me-1"></i>How to Apply</p>
+          <div class="step-box">
+            {% for step in scheme.how_to_apply|split:"\n" %}
+            {% if step.strip %}
+            <div class="step-line">
+              <div class="step-num">{{ forloop.counter }}</div>
+              <div class="small">{{ step|cut:"1. "|cut:"2. "|cut:"3. "|cut:"4. "|cut:"5. " }}</div>
+            </div>
+            {% endif %}
+            {% endfor %}
+          </div>
+
+          {% if scheme.contact %}
+          <div class="mt-3 p-2 rounded-2 small" style="background:#e3f2fd;">
+            <i class="bi bi-telephone me-1 text-primary"></i>
+            <strong>Contact:</strong> {{ scheme.contact }}
+          </div>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+  {% else %}
+  <div class="alert alert-info">
+    <i class="bi bi-info-circle me-2"></i>
+    No specific schemes found. Contact Kisan Call Center at <strong>1800-180-1551</strong> for guidance.
+  </div>
+  {% endif %}
+
+  <!-- General advice -->
+  <div class="card border-0 p-4 mt-2" style="background:#e8f5e9; border-radius:16px;">
+    <h6 class="fw-bold mb-2" style="color:#1b3a2d;">
+      <i class="bi bi-lightbulb me-2 text-warning"></i>Important: Document Your Loss
+    </h6>
+    <div class="row g-3 small text-muted">
+      <div class="col-md-4">
+        <i class="bi bi-camera me-1 text-success"></i>Take photos of damaged crops with date visible
+      </div>
+      <div class="col-md-4">
+        <i class="bi bi-person me-1 text-success"></i>Contact your local Patwari for Girdawari (official damage assessment)
+      </div>
+      <div class="col-md-4">
+        <i class="bi bi-bank me-1 text-success"></i>Inform your bank if you have a crop loan
+      </div>
+    </div>
+  </div>
+
+  <div class="text-center mt-4">
+    <a href="{% url 'farmer-dashboard' %}" class="btn btn-success me-2">
+      <i class="bi bi-house me-1"></i>Back to Dashboard
+    </a>
+    <a href="{% url 'chat' %}" class="btn btn-outline-success">
+      <i class="bi bi-chat-dots me-1"></i>Ask Kisan AI for More Help
+    </a>
+  </div>
+
+</div>
+{% endblock %}

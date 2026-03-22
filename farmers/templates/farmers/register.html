@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block title %}Kisan AI — Login / Register{% endblock %}
+
+{% block extra_css %}
+<style>
+  .reg-hero { background: linear-gradient(135deg,#1a4731,#2d6a4f); min-height: 100vh; }
+  .reg-card { border-radius: 20px; border: none; box-shadow: 0 20px 60px rgba(0,0,0,.15); }
+  .tab-btn {
+    flex: 1; padding: .65rem; border: none; background: #f0f7f2;
+    font-weight: 600; font-size: .95rem; color: #2d6a4f;
+    transition: all .2s; cursor: pointer;
+  }
+  .tab-btn.active { background: #2d6a4f; color: #fff; }
+  .tab-btn:first-child { border-radius: 10px 0 0 10px; }
+  .tab-btn:last-child  { border-radius: 0 10px 10px 0; }
+  .form-label { font-weight: 600; font-size: .875rem; color: #1b3a2d; }
+  .form-control, .form-select {
+    border-radius: 10px; border: 1.5px solid #d8e8d0; padding: .65rem 1rem;
+  }
+  .form-control:focus, .form-select:focus {
+    border-color: #2d6a4f; box-shadow: 0 0 0 3px rgba(45,106,79,.12);
+  }
+  .btn-submit {
+    background: #2d6a4f; color: #fff; border: none;
+    border-radius: 10px; padding: .75rem; font-weight: 700; font-size: 1rem;
+    transition: background .2s; width: 100%;
+  }
+  .btn-submit:hover { background: #1a4731; color: #fff; }
+  .section-divider { border: none; border-top: 2px dashed #d8e8d0; margin: 1.25rem 0; }
+  .step-pill {
+    background: #e8f5e9; color: #2d6a4f; font-size: .75rem;
+    font-weight: 700; padding: .25rem .75rem; border-radius: 20px;
+    letter-spacing: .06em; text-transform: uppercase;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="reg-hero d-flex align-items-center py-5">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-6 col-xl-5">
+
+        <div class="text-center mb-4">
+          <i class="bi bi-truck text-white" style="font-size:2.5rem;"></i>
+          <h2 class="text-white fw-bold mt-2 mb-1">Kisan AI</h2>
+          <p style="color:#a8d5b5;">AI assistant for Punjab farmers</p>
+        </div>
+
+        <div class="reg-card card p-4 p-md-5">
+
+          <!-- Tab switcher -->
+          <div class="d-flex mb-4" style="border-radius:10px; overflow:hidden;">
+            <button class="tab-btn {% if not show_register %}active{% endif %}"
+                    onclick="showTab('login')">
+              <i class="bi bi-box-arrow-in-right me-1"></i>Login
+            </button>
+            <button class="tab-btn {% if show_register %}active{% endif %}"
+                    onclick="showTab('register')">
+              <i class="bi bi-person-plus me-1"></i>New Registration
+            </button>
+          </div>
+
+          <!-- LOGIN FORM -->
+          <div id="loginForm" {% if show_register %}style="display:none"{% endif %}>
+            <p class="text-muted small mb-4">Enter your registered mobile number to log in.</p>
+            <form method="post" action="{% url 'farmer-login' %}">
+              {% csrf_token %}
+              <div class="mb-4">
+                <label class="form-label">Mobile Number</label>
+                <input type="tel" name="phone" class="form-control form-control-lg"
+                       placeholder="98765 43210" required autofocus />
+              </div>
+              {% if login_error %}
+              <div class="alert alert-danger py-2 small">
+                <i class="bi bi-exclamation-circle me-1"></i>{{ login_error }}
+              </div>
+              {% endif %}
+              <button type="submit" class="btn-submit btn">
+                <i class="bi bi-box-arrow-in-right me-2"></i>Login to My Farm
+              </button>
+            </form>
+            <p class="text-center text-muted small mt-3 mb-0">
+              New farmer? <a href="#" onclick="showTab('register')" class="text-success fw-semibold">Create profile</a>
+            </p>
+          </div>
+
+          <!-- REGISTER FORM -->
+          <div id="registerForm" {% if not show_register %}style="display:none"{% endif %}>
+            <form method="post" action="{% url 'farmer-register' %}">
+              {% csrf_token %}
+
+              <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="step-pill">Step 1</span>
+                <span class="fw-bold" style="color:#1b3a2d;">Personal Details</span>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Full Name</label>
+                <input type="text" name="name" class="form-control" placeholder="Gurpreet Singh" required />
+              </div>
+              <div class="row g-3 mb-3">
+                <div class="col-6">
+                  <label class="form-label">Mobile Number</label>
+                  <input type="tel" name="phone" class="form-control" placeholder="98765 43210" required />
+                </div>
+                <div class="col-6">
+                  <label class="form-label">Language</label>
+                  <select name="language" class="form-select">
+                    <option value="pa">ਪੰਜਾਬੀ</option>
+                    <option value="hi">हिंदी</option>
+                    <option value="en">English</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row g-3 mb-3">
+                <div class="col-6">
+                  <label class="form-label">Village</label>
+                  <input type="text" name="village" class="form-control" placeholder="Raikot" required />
+                </div>
+                <div class="col-6">
+                  <label class="form-label">District</label>
+                  <select name="district" class="form-select">
+                    <option>Amritsar</option><option>Bathinda</option><option>Faridkot</option>
+                    <option>Fatehgarh Sahib</option><option>Fazilka</option><option>Ferozepur</option>
+                    <option>Gurdaspur</option><option>Hoshiarpur</option><option>Jalandhar</option>
+                    <option>Kapurthala</option><option selected>Ludhiana</option><option>Mansa</option>
+                    <option>Moga</option><option>Mohali</option><option>Muktsar</option>
+                    <option>Nawanshahr</option><option>Pathankot</option><option>Patiala</option>
+                    <option>Ropar</option><option>Sangrur</option><option>Tarn Taran</option>
+                  </select>
+                </div>
+              </div>
+
+              <hr class="section-divider" />
+
+              <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="step-pill">Step 2</span>
+                <span class="fw-bold" style="color:#1b3a2d;">Farm Details</span>
+              </div>
+
+              <div class="row g-3 mb-3">
+                <div class="col-6">
+                  <label class="form-label">Farm Size (Acres)</label>
+                  <input type="number" name="area_acres" class="form-control" placeholder="5" min="0.1" step="0.1" required />
+                </div>
+                <div class="col-6">
+                  <label class="form-label">Soil Type</label>
+                  <select name="soil_type" class="form-select">
+                    <option value="alluvial">Alluvial</option>
+                    <option value="loamy">Loamy</option>
+                    <option value="sandy">Sandy Loam</option>
+                    <option value="clay">Clay</option>
+                  </select>
+                </div>
+              </div>
+              <div class="mb-4">
+                <label class="form-label">Current Crops <small class="text-muted fw-normal">(comma separated)</small></label>
+                <input type="text" name="crops" class="form-control" placeholder="Wheat, Rice, Cotton" />
+              </div>
+              <input type="hidden" name="farm_name" value="My Farm" />
+              <input type="hidden" name="location" id="autoLocation" value="" />
+
+              <button type="submit" class="btn-submit btn">
+                <i class="bi bi-person-check me-2"></i>Create My Profile
+              </button>
+              <p class="text-center text-muted small mt-3 mb-0">
+                Already registered? <a href="#" onclick="showTab('login')" class="text-success fw-semibold">Login here</a>
+              </p>
+            </form>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showTab(tab) {
+  document.getElementById('loginForm').style.display    = tab === 'login'    ? '' : 'none';
+  document.getElementById('registerForm').style.display = tab === 'register' ? '' : 'none';
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'register' && i === 1));
+  });
+}
+document.querySelector('[name="village"]')?.addEventListener('input', e => {
+  document.getElementById('autoLocation').value = e.target.value;
+});
+</script>
+{% endblock %}

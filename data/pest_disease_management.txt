@@ -1,0 +1,76 @@
+INTEGRATED PEST MANAGEMENT (IPM) — Punjab Crops
+=================================================
+
+WHEAT DISEASES & PESTS
+-----------------------
+Yellow Rust (Stripe Rust) — Puccinia striiformis:
+- Symptoms: Yellow-orange stripes along leaf veins, powdery pustules
+- Favorable: Cool (10-15°C), humid weather, March-April
+- Control: Propiconazole 25% EC 1ml/L OR Tebuconazole 25.9% EC 1ml/L
+- Spray at first sign, repeat after 15 days if needed
+- Resistant varieties: HD-3086, DBW-187
+
+Brown Rust — Puccinia triticina:
+- Symptoms: Round orange-brown pustules on upper leaf surface
+- Control: Mancozeb 75% WP 2g/L OR Propiconazole 1ml/L
+
+Karnal Bunt — Tilletia indica:
+- Symptoms: Black powder (spores) replacing part of grain
+- Prevention: Seed treatment with Carboxin 75% WP 2g/kg seed
+- Use certified disease-free seed
+
+Aphids (Sitobion avenae):
+- Symptoms: Colonies on leaves/ears, honeydew, sooty mold
+- Control: Imidacloprid 17.8% SL 0.5ml/L OR Dimethoate 30% EC 1ml/L
+- Spray only if > 5 aphids/tiller
+
+RICE/PADDY PESTS
+-----------------
+Stem Borer (Scirpophaga incertulas):
+- Symptoms: Dead hearts (vegetative), white ears (reproductive)
+- Control: Chlorpyrifos 20% EC 2L/ha OR Cartap 4G 18 kg/ha
+- Pheromone traps: 5/ha for monitoring
+
+Brown Plant Hopper (BPH):
+- Symptoms: Hopperburn — circular patches of brown dead plants
+- Control: Buprofezin 25% SC 1ml/L OR Pymetrozine 50% WG 0.3g/L
+- AVOID: Cypermethrin, Deltamethrin (cause BPH resurgence)
+- Drain field for 3-4 days to reduce humidity
+
+Leaf Folder:
+- Symptoms: Folded leaves with white papery streaks
+- Control: Chlorpyrifos 20% EC 1.5L/ha (only if > 2 leaves/tiller affected)
+
+Blast (Pyricularia oryzae):
+- Symptoms: Diamond-shaped gray lesions with brown border
+- Favorable: Cool nights, heavy dew, high N application
+- Control: Tricyclazole 75% WP 0.6g/L OR Isoprothiolane 40% EC 1.5ml/L
+- Avoid excess N fertilizer
+
+COTTON PESTS
+-------------
+Whitefly (Bemisia tabaci):
+- Major pest, transmits Cotton Leaf Curl Virus (CLCuV)
+- Control: Spiromesifen 22.9% SC 1ml/L OR Diafenthiuron 50% WP 1g/L
+- Yellow sticky traps: 10/acre for monitoring
+- Avoid: Imidacloprid, Thiamethoxam (resistance developed)
+
+Pink Bollworm (Pectinophora gossypiella):
+- Symptoms: Rosette flowers, damaged bolls with pink larvae
+- Control: Emamectin benzoate 5% SG 0.4g/L
+- Pheromone traps: 5/acre
+
+Thrips (Thrips tabaci):
+- Symptoms: Silvery streaks on leaves, upward curling
+- Control: Fipronil 5% SC 1.5ml/L OR Spinosad 45% SC 0.3ml/L
+
+GENERAL IPM PRINCIPLES
+------------------------
+1. Monitor fields twice weekly — early detection saves cost
+2. Use Economic Threshold Level (ETL) before spraying — don't spray prophylactically
+3. Prefer biological control: Trichogramma cards for stem borer (50,000/acre)
+4. Rotate pesticide groups to prevent resistance
+5. Spray in early morning or evening — avoid hot afternoon
+6. Use proper PPE: gloves, mask, goggles when spraying
+7. Never mix pesticides without checking compatibility
+8. Dispose empty containers safely — never near water bodies

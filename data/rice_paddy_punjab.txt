@@ -1,0 +1,48 @@
+RICE / PADDY (Oryza sativa) — Punjab
+======================================
+Punjab produces ~12 million tonnes of rice annually. Major concern: groundwater depletion.
+
+Transplanting window:
+- Recommended: June 10–30 (Punjab Preservation of Subsoil Water Act mandates no transplanting before June 10)
+- Early transplanting banned to conserve groundwater
+- PR-126 (early variety): transplant June 10–20
+- Pusa-44 (late variety): transplant June 20–30
+
+Recommended varieties 2024-25:
+- PR-126: 123 days, saves 15-20 days vs Pusa-44, saves water, yield 60-65 q/ha
+- PR-128: 125 days, blast resistant, good for Majha region
+- Pusa Basmati-1847: Basmati, 125 days, blast resistant, premium price
+- Pusa Basmati-1509: Basmati, 120 days, high export demand
+- PR-131: 140 days, high yield 70 q/ha, suitable for fertile soils
+
+Direct Seeded Rice (DSR) — Water saving technology:
+- Saves 20-25% water vs transplanted rice
+- Saves 2-3 irrigations
+- Sow June 1–20 with seed drill
+- Seed rate: 8-10 kg/ha (vs 25-30 kg nursery for transplanting)
+- Apply Pendimethalin 30% EC 3.3L/ha as pre-emergence herbicide within 3 days of sowing
+
+Fertilizer (per hectare):
+- N: 120 kg, P2O5: 60 kg, K2O: 60 kg
+- Basal: Full P + Full K + 1/3 N before transplanting
+- Top dress 1: 1/3 N at 21 DAT (active tillering)
+- Top dress 2: 1/3 N at 42 DAT (panicle initiation)
+- Zinc sulphate: 25 kg/ha (zinc deficiency very common in Punjab rice fields)
+
+Water management:
+- Maintain 2-5 cm standing water during vegetative stage
+- Alternate Wetting and Drying (AWD): saves 20-30% water, no yield loss
+- Drain field 10 days before harvest
+
+Common pests:
+- Stem borer (Scirpophaga incertulas): Dead hearts in vegetative, white ears at heading
+  Control: Chlorpyrifos 20% EC 2L/ha or Cartap hydrochloride 4G 18 kg/ha
+- Brown Plant Hopper (BPH): Hopperburn, circular patches of dead plants
+  Control: Buprofezin 25% SC 1ml/L or Pymetrozine 50% WG 0.3g/L
+- Leaf folder: Folded leaves with white streaks
+  Control: Chlorpyrifos 20% EC 1.5L/ha
+- Blast (Pyricularia oryzae): Diamond-shaped lesions on leaves
+  Control: Tricyclazole 75% WP 0.6g/L
+
+Harvest: October 1–31 for most varieties
+MSP 2024-25: ₹2,300/quintal (Common), ₹2,320/quintal (Grade A)

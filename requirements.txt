@@ -1,0 +1,14 @@
+django>=4.2
+djangorestframework
+langchain
+langchain-groq
+langchain-community
+langgraph
+chromadb
+sentence-transformers
+groq
+requests
+pillow
+numpy
+tensorflow-cpu
+python-dotenv

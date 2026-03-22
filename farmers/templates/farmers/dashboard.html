@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+{% load farm_tags %}
+{% block title %}Dashboard — {{ farmer.name }}{% endblock %}
+{% block nav_home %}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .dash-header { background: linear-gradient(135deg,#1a4731,#2d6a4f); color:#fff; padding: 2.5rem 0 4rem; }
+  .stat-card { border: none; border-radius: 16px; box-shadow: 0 2px 16px rgba(0,0,0,.07); height: 100%; }
+  .stat-icon { width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.4rem; }
+  .farm-card { border: none; border-radius: 16px; box-shadow: 0 2px 16px rgba(0,0,0,.07); }
+  .detection-row { border-left: 4px solid #dee2e6; padding-left: 1rem; margin-bottom: 1rem; }
+  .detection-row.critical { border-color: #dc3545; }
+  .detection-row.high     { border-color: #fd7e14; }
+  .detection-row.medium   { border-color: #ffc107; }
+  .detection-row.low      { border-color: #198754; }
+  .risk-badge { font-size: .7rem; font-weight: 700; padding: .3rem .7rem; border-radius: 20px; text-transform: uppercase; }
+  .section-title { font-size: 1.1rem; font-weight: 700; color: #1b3a2d; }
+  .pull-up { margin-top: -2.5rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="dash-header">
+  <div class="container">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <p class="mb-1 opacity-75 small">Welcome back</p>
+        <h2 class="fw-bold mb-1">{{ farmer.name }}</h2>
+        <span class="opacity-75 small">
+          <i class="bi bi-geo-alt me-1"></i>{{ farmer.village }}, {{ farmer.district }}
+        </span>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{% url 'farmer-report' %}" class="btn btn-light btn-sm fw-semibold">
+          <i class="bi bi-file-earmark-text me-1"></i>View Report
+        </a>
+        <a href="{% url 'farmer-logout' %}" class="btn btn-outline-light btn-sm">
+          <i class="bi bi-box-arrow-right me-1"></i>Logout
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container pull-up pb-5">
+
+  <!-- Stats row -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="stat-card card p-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="stat-icon" style="background:#e8f5e9;">
+            <i class="bi bi-house-heart text-success"></i>
+          </div>
+          <div>
+            <div class="fw-bold fs-4">{{ farms.count }}</div>
+            <div class="text-muted small">Farms</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card card p-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="stat-icon" style="background:#fff3e0;">
+            <i class="bi bi-camera text-warning"></i>
+          </div>
+          <div>
+            <div class="fw-bold fs-4">{{ total_detections }}</div>
+            <div class="text-muted small">Detections</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card card p-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="stat-icon" style="background:#fce4ec;">
+            <i class="bi bi-exclamation-triangle text-danger"></i>
+          </div>
+          <div>
+            <div class="fw-bold fs-4">{{ risk_counts.high|add:risk_counts.critical }}</div>
+            <div class="text-muted small">High Risk</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card card p-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="stat-icon" style="background:#e3f2fd;">
+            <i class="bi bi-chat-dots text-primary"></i>
+          </div>
+          <div>
+            <div class="fw-bold fs-4">{{ farmer.chats.count }}</div>
+            <div class="text-muted small">Queries</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- Farms -->
+    <div class="col-lg-5">
+      <div class="farm-card card p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="section-title"><i class="bi bi-map me-2 text-success"></i>My Farms</span>
+          <a href="{% url 'farmer-register' %}" class="btn btn-sm btn-outline-success">
+            <i class="bi bi-pencil"></i> Edit
+          </a>
+        </div>
+        {% for farm in farms %}
+        <div class="p-3 rounded-3 mb-2" style="background:#f0f7f2;">
+          <div class="fw-bold mb-1">{{ farm.name }}</div>
+          <div class="row g-2 small text-muted">
+            <div class="col-6"><i class="bi bi-rulers me-1"></i>{{ farm.area_acres }} acres</div>
+            <div class="col-6"><i class="bi bi-geo me-1"></i>{{ farm.location }}</div>
+            <div class="col-6"><i class="bi bi-layers me-1"></i>{{ farm.get_soil_type_display }}</div>
+            <div class="col-12">
+              <i class="bi bi-seedling me-1"></i>
+              {% for crop in farm.crop_list %}
+                <span class="badge bg-success bg-opacity-10 text-success me-1">{{ crop }}</span>
+              {% empty %}
+                <span class="text-muted">No crops added</span>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% empty %}
+        <p class="text-muted small">No farms added yet. <a href="{% url 'farmer-register' %}">Add farm details</a></p>
+        {% endfor %}
+      </div>
+
+      <!-- Quick actions -->
+      <div class="farm-card card p-4">
+        <span class="section-title d-block mb-3"><i class="bi bi-lightning me-2 text-warning"></i>Quick Actions</span>
+        <div class="d-grid gap-2">
+          <a href="{% url 'chat' %}" class="btn btn-success">
+            <i class="bi bi-chat-dots me-2"></i>Ask Kisan AI
+          </a>
+          <a href="{% url 'pest' %}" class="btn btn-outline-success">
+            <i class="bi bi-camera me-2"></i>Detect Disease
+          </a>
+          <!-- Report Crop Loss -->
+          <button class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#lossModal">
+            <i class="bi bi-exclamation-triangle me-2"></i>Report Crop Loss
+          </button>
+          <a href="{% url 'farmer-report' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-file-earmark-text me-2"></i>View Full Report
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent detections -->
+    <div class="col-lg-7">
+      <div class="farm-card card p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="section-title"><i class="bi bi-bug me-2 text-danger"></i>Recent Detections</span>
+          <a href="{% url 'pest' %}" class="btn btn-sm btn-outline-danger">
+            <i class="bi bi-plus"></i> New
+          </a>
+        </div>
+
+        {% for det in detections %}
+        <div class="detection-row {{ det.risk_level }}">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="fw-semibold small">{{ det.detected_label }}</div>
+              <div class="text-muted" style="font-size:.8rem;">
+                {{ det.farm.name }} &middot; {{ det.detected_at|date:"d M Y, g:i A" }}
+              </div>
+            </div>
+            <span class="risk-badge bg-{{ det.risk_level|risk_color }} bg-opacity-15 text-{{ det.risk_level|risk_color }}">
+              <i class="{{ det.risk_level|risk_icon }} me-1"></i>{{ det.risk_level }}
+            </span>
+          </div>
+          <p class="small text-muted mb-0 mt-1">{{ det.advice|truncatechars:100 }}</p>
+        </div>
+        {% empty %}
+        <div class="text-center py-4">
+          <i class="bi bi-camera text-muted" style="font-size:2rem;"></i>
+          <p class="text-muted small mt-2">No detections yet. Upload a crop photo to get started.</p>
+          <a href="{% url 'pest' %}" class="btn btn-sm btn-outline-success">Detect Disease</a>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Recent chats -->
+      <div class="farm-card card p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="section-title"><i class="bi bi-chat-dots me-2 text-primary"></i>Recent Queries</span>
+          <a href="{% url 'chat' %}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-plus"></i> Ask
+          </a>
+        </div>
+        {% for chat in chats %}
+        <div class="mb-3 pb-3 border-bottom">
+          <div class="small fw-semibold text-dark">{{ chat.query|truncatechars:80 }}</div>
+          <div class="small text-muted mt-1">{{ chat.response|truncatechars:120 }}</div>
+          <div class="text-muted" style="font-size:.75rem;">{{ chat.created_at|date:"d M, g:i A" }}</div>
+        </div>
+        {% empty %}
+        <p class="text-muted small">No queries yet. <a href="{% url 'chat' %}">Ask Kisan AI</a></p>
+        {% endfor %}
+      </div>
+
+      <!-- Recent losses -->
+      {% if losses %}
+      <div class="farm-card card p-4 mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="section-title"><i class="bi bi-exclamation-triangle me-2 text-warning"></i>Reported Losses</span>
+        </div>
+        {% for loss in losses %}
+        <div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded-2" style="background:#fff8e1;">
+          <div>
+            <div class="small fw-semibold">{{ loss.crop }} — {{ loss.get_cause_display }}</div>
+            <div class="text-muted" style="font-size:.75rem;">{{ loss.affected_acres }} acres &middot; {{ loss.reported_at|date:"d M Y" }}</div>
+          </div>
+          <a href="{% url 'loss-detail' loss.pk %}" class="btn btn-sm btn-outline-warning">
+            <i class="bi bi-award me-1"></i>Schemes
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+    </div>
+
+  </div>
+</div>
+
+<!-- Crop Loss Modal -->
+<div class="modal fade" id="lossModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="border-radius:16px; border:none;">
+      <div class="modal-header" style="background:#7b1fa2; color:#fff; border-radius:16px 16px 0 0;">
+        <h5 class="modal-title fw-bold">
+          <i class="bi bi-exclamation-triangle me-2"></i>Report Crop Loss
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{% url 'report-loss' %}">
+        {% csrf_token %}
+        <div class="modal-body p-4">
+          <p class="text-muted small mb-4">
+            Report your crop loss to get instant government scheme recommendations you can apply for.
+          </p>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small">Affected Crop</label>
+              <input type="text" name="crop" class="form-control" placeholder="e.g. Wheat, Rice, Cotton" required />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small">Affected Area (Acres)</label>
+              <input type="number" name="affected_acres" class="form-control" placeholder="e.g. 3.5" min="0.1" step="0.1" required />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small">Cause of Loss</label>
+              <select name="cause" class="form-select" required>
+                {% for val, label in cause_choices %}
+                <option value="{{ val }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small">Severity</label>
+              <select name="severity" class="form-select" required>
+                {% for val, label in severity_choices %}
+                <option value="{{ val }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            {% if farms.count > 1 %}
+            <div class="col-12">
+              <label class="form-label fw-semibold small">Farm</label>
+              <select name="farm_id" class="form-select">
+                {% for farm in farms %}
+                <option value="{{ farm.pk }}">{{ farm.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            {% endif %}
+            <div class="col-12">
+              <label class="form-label fw-semibold small">Additional Details <span class="text-muted fw-normal">(optional)</span></label>
+              <textarea name="description" class="form-control" rows="2"
+                placeholder="e.g. Heavy rain on 15 March destroyed standing wheat crop..."></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 px-4 pb-4">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-warning fw-bold px-4">
+            <i class="bi bi-search me-2"></i>Find Applicable Schemes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
