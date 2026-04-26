@@ -181,6 +181,22 @@ DISEASE_INFO = {
 }
 
 
+# Minimum confidence to trust a prediction.
+# Below this threshold the model is likely looking at a non-leaf / out-of-domain image.
+CONFIDENCE_THRESHOLD = 0.50
+
+# How to take a good photo — shown when confidence is too low
+LOW_CONFIDENCE_ADVICE = (
+    "The model could not confidently identify a disease in this image. "
+    "For accurate results, please:\n"
+    "• Take a close-up photo of a single leaf (not the whole plant or field)\n"
+    "• Ensure the leaf fills most of the frame\n"
+    "• Use good natural lighting — avoid shadows\n"
+    "• Keep the camera steady and in focus\n"
+    "• Supported crops: Tomato, Potato, Corn, Wheat, Apple, Grape, Pepper, Peach"
+)
+
+
 def detect_pest(image_bytes: bytes) -> dict:
     pipe = _load_pipeline()
 
@@ -191,6 +207,7 @@ def detect_pest(image_bytes: bytes) -> dict:
             "confidence_pct": 0.0,
             "advice": "Could not load the model. Check internet connection — downloads ~14MB on first use.",
             "is_healthy": False,
+            "low_confidence": False,
         }
 
     try:
@@ -199,6 +216,25 @@ def detect_pest(image_bytes: bytes) -> dict:
         top = results[0]
         raw_label = top["label"]
         confidence = round(top["score"], 3)
+
+        # Low confidence — image is likely not a leaf or is out-of-domain
+        if confidence < CONFIDENCE_THRESHOLD:
+            return {
+                "label": "Unable to identify",
+                "raw_label": raw_label,
+                "confidence": confidence,
+                "confidence_pct": round(confidence * 100, 1),
+                "advice": LOW_CONFIDENCE_ADVICE,
+                "is_healthy": False,
+                "low_confidence": True,
+                "top3": [
+                    {
+                        "label": DISEASE_INFO.get(r["label"], (r["label"], ""))[0],
+                        "confidence_pct": round(r["score"] * 100, 1),
+                    }
+                    for r in results[:3]
+                ],
+            }
 
         display_label, advice = DISEASE_INFO.get(
             raw_label,
@@ -213,6 +249,7 @@ def detect_pest(image_bytes: bytes) -> dict:
             "confidence_pct": round(confidence * 100, 1),
             "advice": advice,
             "is_healthy": is_healthy,
+            "low_confidence": False,
             "top3": [
                 {
                     "label": DISEASE_INFO.get(r["label"], (r["label"], ""))[0],
@@ -229,4 +266,5 @@ def detect_pest(image_bytes: bytes) -> dict:
             "confidence_pct": 0.0,
             "advice": f"Error: {e}",
             "is_healthy": False,
+            "low_confidence": False,
         }
