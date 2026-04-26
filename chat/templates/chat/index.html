@@ -4,136 +4,307 @@
 
 {% block extra_css %}
 <style>
+  .chat-wrap { height: calc(100vh - 160px); display: flex; flex-direction: column; }
   .chat-box {
-    height: 62vh; overflow-y: auto;
+    flex: 1; overflow-y: auto;
     background: #fff; border-radius: 12px;
     padding: 1.25rem; border: 1px solid #d8e8d0;
   }
-  .bubble { max-width: 78%; padding: .55rem 1rem; border-radius: 18px; margin-bottom: .5rem; word-break: break-word; }
+  .bubble {
+    max-width: 78%; padding: .6rem 1rem;
+    border-radius: 18px; margin-bottom: .5rem;
+    word-break: break-word; line-height: 1.55;
+  }
   .bubble-user      { background: #2d6a4f; color: #fff; margin-left: auto; border-bottom-right-radius: 4px; }
   .bubble-assistant { background: #e9f5ee; color: #1b3a2d; border-bottom-left-radius: 4px; }
-  .send-bar { background: #fff; border-radius: 12px; border: 1px solid #d8e8d0; padding: .75rem 1rem; }
+  .bubble-assistant.streaming::after {
+    content: "▋"; animation: blink .7s step-end infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .send-bar {
+    background: #fff; border-radius: 12px;
+    border: 1px solid #d8e8d0; padding: .65rem 1rem;
+    margin-top: .75rem;
+  }
+  .typing-indicator span {
+    display: inline-block; width: 8px; height: 8px;
+    background: #2d6a4f; border-radius: 50%; margin: 0 2px;
+    animation: bounce .9s infinite;
+  }
+  .typing-indicator span:nth-child(2) { animation-delay: .15s; }
+  .typing-indicator span:nth-child(3) { animation-delay: .3s; }
+  @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+  #send-btn:disabled { opacity: .6; cursor: not-allowed; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="row g-4">
+<div class="container-fluid px-3 py-2">
+<div class="row g-3">
 
   <!-- Sidebar -->
-  <div class="col-lg-3">
+  <div class="col-lg-3 d-none d-lg-block">
     <div class="card border-0 shadow-sm p-3 mb-3">
-      <h6 class="fw-bold text-success mb-3">⚙️ Settings</h6>
+      <h6 class="fw-bold mb-3"><i class="bi bi-gear me-1 text-success"></i>Settings</h6>
 
-      <label class="form-label small">Language</label>
+      <label class="form-label small fw-semibold">Language</label>
       <select id="sel-lang" class="form-select form-select-sm mb-3">
         <option value="en" {% if language == "en" %}selected{% endif %}>English</option>
         <option value="hi" {% if language == "hi" %}selected{% endif %}>हिंदी</option>
         <option value="pa" {% if language == "pa" %}selected{% endif %}>ਪੰਜਾਬੀ</option>
       </select>
 
-      <label class="form-label small">Location</label>
+      <label class="form-label small fw-semibold">Location</label>
       <input id="sel-loc" type="text" class="form-control form-control-sm mb-3"
-             value="{{ location }}" />
+             value="{{ location }}" placeholder="e.g. Ludhiana" />
 
       <form method="post" action="{% url 'clear-chat' %}">
         {% csrf_token %}
         <button class="btn btn-sm btn-outline-danger w-100">
-          <i class="bi bi-trash"></i> Clear Chat
+          <i class="bi bi-trash me-1"></i>Clear Chat
         </button>
       </form>
     </div>
 
-    <!-- Quick weather card -->
     <div class="card border-0 shadow-sm p-3">
-      <h6 class="fw-bold text-success mb-2">🌦 Weather</h6>
+      <h6 class="fw-bold mb-2"><i class="bi bi-cloud-sun me-1 text-success"></i>Weather</h6>
       <div id="weather-info" class="small text-muted">Loading...</div>
     </div>
-  </div>
 
-  <!-- Chat -->
-  <div class="col-lg-9">
-    <div class="chat-box" id="chatBox">
-      {% for msg in messages %}
-        <div class="d-flex {% if msg.role == 'user' %}justify-content-end{% endif %}">
-          <div class="bubble bubble-{{ msg.role }}">{{ msg.content }}</div>
-        </div>
-      {% empty %}
-        <p class="text-muted text-center mt-5 small">
-          👋 Ask me about crops, fertilizers, weather, or market prices.
-        </p>
-      {% endfor %}
+    <!-- Quick prompts -->
+    <div class="card border-0 shadow-sm p-3 mt-3">
+      <h6 class="fw-bold mb-2"><i class="bi bi-lightning me-1 text-success"></i>Quick Ask</h6>
+      <div class="d-flex flex-column gap-1">
+        <button class="btn btn-sm btn-outline-success text-start quick-prompt">
+          Wheat price today?
+        </button>
+        <button class="btn btn-sm btn-outline-success text-start quick-prompt">
+          Best fertilizer for rice?
+        </button>
+        <button class="btn btn-sm btn-outline-success text-start quick-prompt">
+          PMFBY scheme details
+        </button>
+        <button class="btn btn-sm btn-outline-success text-start quick-prompt">
+          Kharif sowing calendar
+        </button>
+      </div>
     </div>
-
-    <form method="post" action="{% url 'chat' %}" class="send-bar mt-3 d-flex gap-2 align-items-center">
-      {% csrf_token %}
-      <input type="hidden" name="language" id="inp-lang" value="{{ language }}" />
-      <input type="hidden" name="location" id="inp-loc"  value="{{ location }}" />
-
-      <button type="button" id="mic-btn" class="btn btn-outline-secondary" title="Voice input">
-        <i class="bi bi-mic"></i>
-      </button>
-      <input type="text" name="query" id="query-input" class="form-control"
-             placeholder="Ask about crops, pests, weather, prices…" autocomplete="off" required />
-      <button type="submit" class="btn btn-success px-4">
-        <i class="bi bi-send-fill"></i>
-      </button>
-    </form>
-    <small class="text-muted ms-1" id="mic-status"></small>
   </div>
 
+  <!-- Chat area -->
+  <div class="col-lg-9">
+    <div class="chat-wrap">
+      <div class="chat-box" id="chatBox">
+        {% for msg in messages %}
+          <div class="d-flex {% if msg.role == 'user' %}justify-content-end{% endif %} mb-1">
+            <div class="bubble bubble-{{ msg.role }}">{{ msg.content }}</div>
+          </div>
+        {% empty %}
+          <div class="text-center mt-5" id="emptyState">
+            <i class="bi bi-chat-dots text-success" style="font-size:2.5rem;"></i>
+            <p class="text-muted mt-2">Ask me about crops, fertilizers, weather, or market prices.</p>
+          </div>
+        {% endfor %}
+      </div>
+
+      <!-- Send bar -->
+      <div class="send-bar d-flex gap-2 align-items-center">
+        <button type="button" id="mic-btn" class="btn btn-outline-secondary btn-sm" title="Voice input">
+          <i class="bi bi-mic"></i>
+        </button>
+        <input type="text" id="query-input" class="form-control"
+               placeholder="Ask about crops, pests, weather, prices…" autocomplete="off" />
+        <button id="send-btn" class="btn btn-success px-3">
+          <i class="bi bi-send-fill"></i>
+        </button>
+      </div>
+      <small class="text-muted ms-1 mt-1 d-block" id="mic-status"></small>
+    </div>
+  </div>
+
+</div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-  // Sync sidebar → hidden inputs
-  document.getElementById('sel-lang').addEventListener('change', e => {
-    document.getElementById('inp-lang').value = e.target.value;
-  });
-  document.getElementById('sel-loc').addEventListener('input', e => {
-    document.getElementById('inp-loc').value = e.target.value;
-  });
+const chatBox    = document.getElementById('chatBox');
+const queryInput = document.getElementById('query-input');
+const sendBtn    = document.getElementById('send-btn');
+const emptyState = document.getElementById('emptyState');
 
-  // Scroll to bottom
-  const box = document.getElementById('chatBox');
-  box.scrollTop = box.scrollHeight;
+function getLang()     { return document.getElementById('sel-lang').value; }
+function getLocation() { return document.getElementById('sel-loc').value; }
+function scrollBottom(){ chatBox.scrollTop = chatBox.scrollHeight; }
 
-  // Load weather widget
-  const loc = document.getElementById('sel-loc').value;
-  fetch(`/weather/?location=${encodeURIComponent(loc)}`)
-    .then(r => r.json())
-    .then(d => {
-      document.getElementById('weather-info').innerHTML = d.error
-        ? `<span class="text-danger">${d.error}</span>`
-        : `${d.description}, <strong>${d.temp_c}°C</strong><br>
-           Humidity: ${d.humidity}% · Wind: ${d.wind_speed} m/s`;
+function addBubble(role, text, streaming=false) {
+  if (emptyState) emptyState.remove();
+  const wrap = document.createElement('div');
+  wrap.className = `d-flex ${role === 'user' ? 'justify-content-end' : ''} mb-1`;
+  const bubble = document.createElement('div');
+  bubble.className = `bubble bubble-${role}${streaming ? ' streaming' : ''}`;
+  bubble.textContent = text;
+  wrap.appendChild(bubble);
+  chatBox.appendChild(wrap);
+  scrollBottom();
+  return bubble;
+}
+
+function addTypingIndicator() {
+  const wrap = document.createElement('div');
+  wrap.className = 'd-flex mb-1';
+  wrap.id = 'typing';
+  wrap.innerHTML = `<div class="bubble bubble-assistant py-2 px-3">
+    <div class="typing-indicator"><span></span><span></span><span></span></div>
+  </div>`;
+  chatBox.appendChild(wrap);
+  scrollBottom();
+}
+
+function removeTypingIndicator() {
+  document.getElementById('typing')?.remove();
+}
+
+async function sendMessage() {
+  const query = queryInput.value.trim();
+  if (!query || sendBtn.disabled) return;
+
+  queryInput.value = '';
+  sendBtn.disabled = true;
+  addBubble('user', query);
+  addTypingIndicator();
+
+  // Try SSE streaming first
+  try {
+    const params = new URLSearchParams({
+      query,
+      language: getLang(),
+      location: getLocation(),
     });
 
-  // Voice input (Web Speech API)
-  const micBtn = document.getElementById('mic-btn');
-  const micStatus = document.getElementById('mic-status');
-  const queryInput = document.getElementById('query-input');
-  const langMap = { en: 'en-IN', hi: 'hi-IN', pa: 'pa-IN' };
+    const evtSource = new EventSource(`/chat/stream/?${params}`);
+    let aiBubble = null;
+    let fullText = '';
 
-  if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const rec = new SR();
-    rec.interimResults = false;
+    evtSource.onmessage = (e) => {
+      const data = JSON.parse(e.data);
 
-    rec.onresult = e => { queryInput.value = e.results[0][0].transcript; };
-    rec.onend = () => {
-      micBtn.classList.replace('btn-danger', 'btn-outline-secondary');
-      micStatus.textContent = '';
+      if (data.done) {
+        evtSource.close();
+        if (aiBubble) aiBubble.classList.remove('streaming');
+        sendBtn.disabled = false;
+        queryInput.focus();
+        return;
+      }
+
+      if (data.chunk) {
+        removeTypingIndicator();
+        fullText += data.chunk;
+        if (!aiBubble) {
+          aiBubble = addBubble('assistant', fullText, true);
+        } else {
+          aiBubble.textContent = fullText;
+          scrollBottom();
+        }
+      }
     };
-    micBtn.addEventListener('click', () => {
-      rec.lang = langMap[document.getElementById('sel-lang').value] || 'en-IN';
-      rec.start();
-      micBtn.classList.replace('btn-outline-secondary', 'btn-danger');
-      micStatus.textContent = '🎤 Listening…';
-    });
-  } else {
-    micBtn.disabled = true;
-    micBtn.title = 'Voice not supported in this browser';
+
+    evtSource.onerror = () => {
+      evtSource.close();
+      removeTypingIndicator();
+      // Fallback to AJAX
+      sendAjax(query);
+    };
+
+  } catch (err) {
+    removeTypingIndicator();
+    sendAjax(query);
   }
+}
+
+async function sendAjax(query) {
+  // Fallback non-streaming AJAX
+  try {
+    const csrfToken = '{{ csrf_token }}';
+    const res = await fetch('/chat/api/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken,
+      },
+      body: JSON.stringify({
+        query,
+        language: getLang(),
+        location: getLocation(),
+      }),
+    });
+    const data = await res.json();
+    removeTypingIndicator();
+    addBubble('assistant', data.response || data.error || 'Error getting response');
+  } catch (err) {
+    removeTypingIndicator();
+    addBubble('assistant', 'Network error. Please try again.');
+  } finally {
+    sendBtn.disabled = false;
+    queryInput.focus();
+  }
+}
+
+// Send on button click
+sendBtn.addEventListener('click', sendMessage);
+
+// Send on Enter key
+queryInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+// Quick prompts
+document.querySelectorAll('.quick-prompt').forEach(btn => {
+  btn.addEventListener('click', () => {
+    queryInput.value = btn.textContent.trim();
+    sendMessage();
+  });
+});
+
+// Weather widget
+fetch(`/chat/weather/?location=${encodeURIComponent(getLocation())}`)
+  .then(r => r.json())
+  .then(d => {
+    document.getElementById('weather-info').innerHTML = d.error
+      ? `<span class="text-danger small">${d.error}</span>`
+      : `${d.description}, <strong>${d.temp_c}°C</strong><br>
+         Humidity: ${d.humidity}% &middot; Wind: ${d.wind_speed} m/s`;
+  }).catch(() => {
+    document.getElementById('weather-info').textContent = 'Unavailable';
+  });
+
+// Voice input
+const micBtn    = document.getElementById('mic-btn');
+const micStatus = document.getElementById('mic-status');
+const langMap   = { en: 'en-IN', hi: 'hi-IN', pa: 'pa-IN' };
+
+if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+  const SR  = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const rec = new SR();
+  rec.interimResults = false;
+  rec.onresult = e => { queryInput.value = e.results[0][0].transcript; };
+  rec.onend = () => {
+    micBtn.classList.replace('btn-danger', 'btn-outline-secondary');
+    micStatus.textContent = '';
+  };
+  micBtn.addEventListener('click', () => {
+    rec.lang = langMap[getLang()] || 'en-IN';
+    rec.start();
+    micBtn.classList.replace('btn-outline-secondary', 'btn-danger');
+    micStatus.textContent = 'Listening…';
+  });
+} else {
+  micBtn.disabled = true;
+}
+
+scrollBottom();
 </script>
 {% endblock %}

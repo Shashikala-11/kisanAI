@@ -1,11 +1,13 @@
 """
-LangChain tool-calling agent — Groq Llama 3.1 70B.
+LangChain tool-calling agent — Groq Llama 3.3 70B.
 The LLM decides which tools to call. If tools return no data,
 the LLM still answers from its own agricultural knowledge.
 """
 import os
+import time
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage
+from groq import RateLimitError
 from .tools.weather import weather_tool
 from .tools.market import market_tool
 from .tools.rag import rag_tool
@@ -24,33 +26,94 @@ TOOLS AVAILABLE:
 - pest_advice_tool: crop disease treatment advice
 
 RULES:
-- For price questions: ALWAYS call market_tool first. If it returns no data, answer using your own knowledge of typical Punjab mandi prices.
-- For weather questions: ALWAYS call weather_tool.
-- For crop/fertilizer/scheme questions: call rag_tool to get knowledge base context, then answer.
+- For price questions: call market_tool first. If no data, use your own knowledge of typical Punjab mandi prices.
+- For weather questions: call weather_tool.
+- For crop/fertilizer/scheme questions: call rag_tool, then answer.
 - For disease/pest questions: call pest_advice_tool.
-- NEVER say "I don't know" or "I can't answer" — you are an expert, always give a useful answer.
-- If a tool fails or returns no data, use your own agricultural expertise to answer.
-- You can answer general farming questions directly without tools if no real-time data is needed.
-- Always respond in {language}.
-- Keep answers practical, specific, and farmer-friendly. No jargon.
-- For prices, always give context: is it a good time to sell? Compare to MSP if relevant.
-- Farmer's location: {location}
+- NEVER say "I don't know" — always give a useful answer from your expertise.
+- If a tool fails, answer from your own agricultural knowledge.
+- Respond in {language}. Keep answers concise, practical, farmer-friendly.
+- Farmer location: {location}
 """
 
 
-def _make_llm():
-    """Create a fresh LLM instance — not cached so language/location always applies."""
-    return ChatGroq(
+def _make_llm(bind_tools=True):
+    llm = ChatGroq(
         model="llama-3.3-70b-versatile",
         api_key=os.getenv("GROQ_API_KEY"),
         temperature=0.3,
-        max_tokens=1500,
-    ).bind_tools(TOOLS)
+        max_tokens=800,  # reduced to stay within TPM limits
+    )
+    return llm.bind_tools(TOOLS) if bind_tools else llm
 
 
-def run_agent(query: str, language: str = "en", location: str = "Punjab") -> str:
-    llm = _make_llm()
+def _invoke_with_retry(llm, messages, retries=3):
+    """Invoke LLM with exponential backoff on rate limit errors."""
+    for attempt in range(retries):
+        try:
+            return llm.invoke(messages)
+        except RateLimitError as e:
+            if attempt == retries - 1:
+                raise
+            wait = 8 * (attempt + 1)  # 8s, 16s, 24s
+            time.sleep(wait)
+    raise RuntimeError("LLM unavailable after retries")
 
+
+def run_agent_stream(query: str, language: str = "en", location: str = "Punjab"):
+    """
+    Generator that yields text chunks as they arrive from the LLM.
+    Uses Groq streaming for token-by-token output.
+    Falls back to non-streaming on error.
+    """
+    lang_display = {"en": "English", "hi": "Hindi", "pa": "Punjabi (Gurmukhi script)"}.get(language, "English")
+
+    # First run the tool-calling loop (non-streaming) to get tool results
+    # Then stream the final answer
+    llm_tools = _make_llm(bind_tools=True)
+    messages = [
+        SystemMessage(content=SYSTEM_PROMPT.format(language=lang_display, location=location)),
+        HumanMessage(content=query),
+    ]
+
+    try:
+        # Tool-calling phase (non-streaming — tools need complete responses)
+        for _ in range(3):
+            response = _invoke_with_retry(llm_tools, messages)
+            messages.append(response)
+
+            if not response.tool_calls:
+                # LLM answered directly — stream the content word by word
+                words = (response.content or "").split(" ")
+                for i, word in enumerate(words):
+                    yield word + (" " if i < len(words) - 1 else "")
+                return
+
+            for tc in response.tool_calls:
+                tool_fn = TOOLS_BY_NAME.get(tc["name"])
+                try:
+                    result = tool_fn.invoke(tc["args"]) if tool_fn else f"Unknown tool: {tc['name']}"
+                except Exception as e:
+                    result = f"Tool error: {e}. Answer from your own knowledge."
+                messages.append(ToolMessage(content=str(result), tool_call_id=tc["id"]))
+
+        # After tool calls — stream the final answer
+        llm_stream = ChatGroq(
+            model="llama-3.3-70b-versatile",
+            api_key=os.getenv("GROQ_API_KEY"),
+            temperature=0.3,
+            max_tokens=800,
+            streaming=True,
+        )
+        for chunk in llm_stream.stream(messages):
+            if chunk.content:
+                yield chunk.content
+
+    except RateLimitError:
+        yield "The AI service is temporarily busy. Please wait 10-15 seconds and try again."
+    except Exception as e:
+        yield f"Sorry, an error occurred. Please try again."
+    llm = _make_llm(bind_tools=True)
     lang_display = {"en": "English", "hi": "Hindi", "pa": "Punjabi (Gurmukhi script)"}.get(language, "English")
 
     messages = [
@@ -58,30 +121,28 @@ def run_agent(query: str, language: str = "en", location: str = "Punjab") -> str
         HumanMessage(content=query),
     ]
 
-    for _ in range(5):
-        response: AIMessage = llm.invoke(messages)
-        messages.append(response)
+    try:
+        for _ in range(4):  # reduced from 5 to 4 iterations
+            response: AIMessage = _invoke_with_retry(llm, messages)
+            messages.append(response)
 
-        # No tool calls — LLM gave a direct answer
-        if not response.tool_calls:
-            return response.content or "Sorry, I could not generate a response."
+            if not response.tool_calls:
+                return response.content or "Sorry, I could not generate a response."
 
-        # Run each tool
-        for tc in response.tool_calls:
-            tool_fn = TOOLS_BY_NAME.get(tc["name"])
-            try:
-                result = tool_fn.invoke(tc["args"]) if tool_fn else f"Unknown tool: {tc['name']}"
-            except Exception as e:
-                result = f"Tool error ({tc['name']}): {e}. Please answer from your own knowledge."
+            for tc in response.tool_calls:
+                tool_fn = TOOLS_BY_NAME.get(tc["name"])
+                try:
+                    result = tool_fn.invoke(tc["args"]) if tool_fn else f"Unknown tool: {tc['name']}"
+                except Exception as e:
+                    result = f"Tool error: {e}. Answer from your own knowledge."
+                messages.append(ToolMessage(content=str(result), tool_call_id=tc["id"]))
 
-            messages.append(ToolMessage(content=str(result), tool_call_id=tc["id"]))
+        # Max iterations — get final answer without tools
+        final = _invoke_with_retry(_make_llm(bind_tools=False), messages)
+        return final.content or "Sorry, I could not process your request."
 
-    # Max iterations — ask for final answer without tools
-    llm_no_tools = ChatGroq(
-        model="llama-3.3-70b-versatile",
-        api_key=os.getenv("GROQ_API_KEY"),
-        temperature=0.3,
-        max_tokens=1500,
-    )
-    final = llm_no_tools.invoke(messages)
-    return final.content or "Sorry, I could not process your request."
+    except RateLimitError:
+        return (
+            "The AI service is temporarily busy due to high usage. "
+            "Please wait 10-15 seconds and try again."
+        )
