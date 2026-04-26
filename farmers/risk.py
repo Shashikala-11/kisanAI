@@ -66,7 +66,7 @@ def analyze_farm_risk(
             model="llama-3.3-70b-versatile",
             api_key=os.getenv("GROQ_API_KEY"),
             temperature=0.2,
-            max_tokens=1024,
+            max_tokens=700,
         )
 
         prompt = RISK_PROMPT.format(

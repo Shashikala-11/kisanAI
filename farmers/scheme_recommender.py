@@ -98,7 +98,7 @@ def recommend_schemes(loss, farmer, farm) -> list:
             model="llama-3.3-70b-versatile",
             api_key=os.getenv("GROQ_API_KEY"),
             temperature=0.1,
-            max_tokens=1500,
+            max_tokens=900,
         )
         response = llm.invoke([
             SystemMessage(content=SYSTEM_PROMPT.format(language=language)),
