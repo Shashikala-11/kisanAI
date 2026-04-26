@@ -42,7 +42,7 @@ def _make_llm(bind_tools=True):
         model="llama-3.3-70b-versatile",
         api_key=os.getenv("GROQ_API_KEY"),
         temperature=0.3,
-        max_tokens=800,  # reduced to stay within TPM limits
+        max_tokens=800,
     )
     return llm.bind_tools(TOOLS) if bind_tools else llm
 
@@ -52,67 +52,15 @@ def _invoke_with_retry(llm, messages, retries=3):
     for attempt in range(retries):
         try:
             return llm.invoke(messages)
-        except RateLimitError as e:
+        except RateLimitError:
             if attempt == retries - 1:
                 raise
-            wait = 8 * (attempt + 1)  # 8s, 16s, 24s
-            time.sleep(wait)
+            time.sleep(8 * (attempt + 1))  # 8s, 16s, 24s
     raise RuntimeError("LLM unavailable after retries")
 
 
-def run_agent_stream(query: str, language: str = "en", location: str = "Punjab"):
-    """
-    Generator that yields text chunks as they arrive from the LLM.
-    Uses Groq streaming for token-by-token output.
-    Falls back to non-streaming on error.
-    """
-    lang_display = {"en": "English", "hi": "Hindi", "pa": "Punjabi (Gurmukhi script)"}.get(language, "English")
-
-    # First run the tool-calling loop (non-streaming) to get tool results
-    # Then stream the final answer
-    llm_tools = _make_llm(bind_tools=True)
-    messages = [
-        SystemMessage(content=SYSTEM_PROMPT.format(language=lang_display, location=location)),
-        HumanMessage(content=query),
-    ]
-
-    try:
-        # Tool-calling phase (non-streaming — tools need complete responses)
-        for _ in range(3):
-            response = _invoke_with_retry(llm_tools, messages)
-            messages.append(response)
-
-            if not response.tool_calls:
-                # LLM answered directly — stream the content word by word
-                words = (response.content or "").split(" ")
-                for i, word in enumerate(words):
-                    yield word + (" " if i < len(words) - 1 else "")
-                return
-
-            for tc in response.tool_calls:
-                tool_fn = TOOLS_BY_NAME.get(tc["name"])
-                try:
-                    result = tool_fn.invoke(tc["args"]) if tool_fn else f"Unknown tool: {tc['name']}"
-                except Exception as e:
-                    result = f"Tool error: {e}. Answer from your own knowledge."
-                messages.append(ToolMessage(content=str(result), tool_call_id=tc["id"]))
-
-        # After tool calls — stream the final answer
-        llm_stream = ChatGroq(
-            model="llama-3.3-70b-versatile",
-            api_key=os.getenv("GROQ_API_KEY"),
-            temperature=0.3,
-            max_tokens=800,
-            streaming=True,
-        )
-        for chunk in llm_stream.stream(messages):
-            if chunk.content:
-                yield chunk.content
-
-    except RateLimitError:
-        yield "The AI service is temporarily busy. Please wait 10-15 seconds and try again."
-    except Exception as e:
-        yield f"Sorry, an error occurred. Please try again."
+def run_agent(query: str, language: str = "en", location: str = "Punjab") -> str:
+    """Blocking call — returns full response string. Used as AJAX fallback."""
     llm = _make_llm(bind_tools=True)
     lang_display = {"en": "English", "hi": "Hindi", "pa": "Punjabi (Gurmukhi script)"}.get(language, "English")
 
@@ -122,7 +70,7 @@ def run_agent_stream(query: str, language: str = "en", location: str = "Punjab")
     ]
 
     try:
-        for _ in range(4):  # reduced from 5 to 4 iterations
+        for _ in range(4):
             response: AIMessage = _invoke_with_retry(llm, messages)
             messages.append(response)
 
@@ -142,7 +90,58 @@ def run_agent_stream(query: str, language: str = "en", location: str = "Punjab")
         return final.content or "Sorry, I could not process your request."
 
     except RateLimitError:
-        return (
-            "The AI service is temporarily busy due to high usage. "
-            "Please wait 10-15 seconds and try again."
+        return "The AI service is temporarily busy. Please wait 10-15 seconds and try again."
+    except Exception:
+        return "Sorry, an error occurred. Please try again."
+
+
+def run_agent_stream(query: str, language: str = "en", location: str = "Punjab"):
+    """
+    Generator — yields text chunks as they arrive from the LLM.
+    Tool-calling phase is blocking; final answer streams token by token.
+    """
+    lang_display = {"en": "English", "hi": "Hindi", "pa": "Punjabi (Gurmukhi script)"}.get(language, "English")
+    llm_tools = _make_llm(bind_tools=True)
+
+    messages = [
+        SystemMessage(content=SYSTEM_PROMPT.format(language=lang_display, location=location)),
+        HumanMessage(content=query),
+    ]
+
+    try:
+        # Tool-calling phase (non-streaming — tools need complete responses)
+        for _ in range(3):
+            response = _invoke_with_retry(llm_tools, messages)
+            messages.append(response)
+
+            if not response.tool_calls:
+                # LLM answered directly without tools — yield word by word
+                words = (response.content or "").split(" ")
+                for i, word in enumerate(words):
+                    yield word + (" " if i < len(words) - 1 else "")
+                return
+
+            for tc in response.tool_calls:
+                tool_fn = TOOLS_BY_NAME.get(tc["name"])
+                try:
+                    result = tool_fn.invoke(tc["args"]) if tool_fn else f"Unknown tool: {tc['name']}"
+                except Exception as e:
+                    result = f"Tool error: {e}. Answer from your own knowledge."
+                messages.append(ToolMessage(content=str(result), tool_call_id=tc["id"]))
+
+        # After tool calls — stream the final synthesized answer
+        llm_stream = ChatGroq(
+            model="llama-3.3-70b-versatile",
+            api_key=os.getenv("GROQ_API_KEY"),
+            temperature=0.3,
+            max_tokens=800,
+            streaming=True,
         )
+        for chunk in llm_stream.stream(messages):
+            if chunk.content:
+                yield chunk.content
+
+    except RateLimitError:
+        yield "The AI service is temporarily busy. Please wait 10-15 seconds and try again."
+    except Exception:
+        yield "Sorry, an error occurred. Please try again."
